@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>open-muse 调研 · 交互思维导图</title>
+<style>
+  :root { --bg:#0f1115; --fg:#e8eaf0; --muted:#9aa3b2; --accent:#7cc4ff; --card:#171b22; --border:#262c36; }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--fg); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; margin:0; padding:24px; line-height:1.6; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:16px; }
+  .toolbar { margin-bottom:16px; display:flex; gap:8px; }
+  button { background:var(--card); color:var(--fg); border:1px solid var(--border); border-radius:8px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  button:hover { border-color:var(--accent); }
+  ul.tree, ul.tree ul { list-style:none; margin:0; padding-left:22px; }
+  ul.tree { padding-left:0; }
+  li.node { margin:2px 0; }
+  .label { cursor:pointer; display:inline-block; padding:3px 10px; border-radius:8px; }
+  .label:hover { background:var(--card); }
+  .label .caret { display:inline-block; width:16px; color:var(--accent); font-size:12px; }
+  .label .text { font-size:14px; }
+  li.leaf > .label { cursor:default; }
+  li.leaf > .label:hover { background:none; }
+  li.leaf > .label .text { color:var(--muted); font-size:13px; }
+  li.root > .label .text { font-size:17px; font-weight:700; }
+  li.l1 > .label .text { font-size:15px; font-weight:600; color:var(--accent); }
+  ul.collapsed { display:none; }
+  .src { margin-top:24px; font-size:12px; color:var(--muted); }
+  .src a { color:var(--accent); }
+</style>
+</head>
+<body>
+<h1>open-muse 调研 · 交互思维导图</h1>
+<div class="sub">调研 · 2026-10-05 · 点击节点展开 / 折叠</div>
+<div class="toolbar">
+  <button id="expandAll">全部展开</button>
+  <button id="collapseAll">全部折叠</button>
+</div>
+<ul class="tree" id="tree"></ul>
+<div class="src">完整报告见 <a href="https://github.com/ringozzt/open-muse-research">ringozzt/open-muse-research · README.md</a> ｜ fork 自 <a href="https://github.com/chyroc/open-muse">chyroc/open-muse</a></div>
+<script>
+const data = ["open-muse 调研", [
+  ["基本盘", [
+    "chyroc/open-muse · 已 fork 到 ringozzt/open-muse",
+    "20 star / 2 fork / 0 release · 2026-09-29 创建（6 天）",
+    "单人 482 commits（chyroc 一人，约 80 commits/天）",
+    "TypeScript · 765 文件 · 默认分支 master",
+    "无 LICENSE 文件——借代码前先确认授权"
+  ]],
+  ["一句话", [
+    "开源个人 AI agent 客户端：iOS / Mac / Web / Android",
+    "跑在 Managed Agents（MA）托管服务上",
+    "无自建模型代理：拿用户自己的 key 直调 MA API",
+    "和 Muse 是同一个产品形状"
+  ]],
+  ["架构三件套", [
+    ["客户端 Apps（src/ 193 文件）", [
+      "iOS 是主验收平台；Mac 原生；Web 移动优先",
+      "Android 在仓库里，但尚未在真机上验证",
+      "无 MA 连接时保持登出：网络故障永远不产生模拟回复"
+    ]],
+    ["Open Muse 服务（server/，CF Workers + D1）", [
+      "管账号、密钥（AES-GCM，只读回内存不落盘）",
+      "定时 Feed、目标 check-in、提醒投递",
+      "设计边界：只做同步编排，不替 Ark 跑 loop"
+    ]],
+    ["Ark MA：真正的 agent loop", [
+      "持久化 agent（含版本）、隔离云环境",
+      "带事件流的 session、可挂文件和 Vault",
+      "memory store：tools / MCP / skills 由上游执行"
+    ]]
+  ]],
+  ["ma-provider.ts：60 行后端切换", [
+    "MAProviderId = \"ark\" | \"claude\"，构建时二选一",
+    "默认 Ark：ark.cn-beijing.volces.com，豆包 doubao-seed-2-1-pro-260915",
+    "备选 Claude MA：claude-opus-5-5，WebView 直调 API",
+    "关键决策：capability intersection——缺的能力直接砍，不模拟",
+    "对照 oar：oar 写 adapter 补齐（并集），open-muse 取交集",
+    "52 个 MA 操作目录：shared/ma-contract.json + ma.ts"
+  ]],
+  ["记忆模型：与 Muse 同构", [
+    "GOALS.md / SOUL.md / MEMORY.md / IDENTITY.md / FEED.md",
+    "首次对话起名（Kit / Milo / Muse）写进 IDENTITY.md",
+    "记忆即文档正在成为个人 agent 的事实标准"
+  ]],
+  ["信任模型", [
+    "用 Mac / 读健康数据前先审批；日历和定位每次都问",
+    "No pretend answers：连不上就直说，绝不编假回复",
+    "结果不确定的写操作先核查、不盲重试",
+    "密钥只放内存；记忆文档可见、可编辑、可清空"
+  ]],
+  ["验证状态", [
+    "2026-09-30 验证记录：452 测试通过（含 89 直连用例）",
+    "区分 mock 回归 vs 真实云测试",
+    "\"Integrated\" 只表示适配代码存在 ≠ 真实账号验收",
+    "Claude 后端未端到端验证；客户端无定时任务/推送/支付"
+  ]],
+  ["给 Te 的 5 条参考", [
+    "产品层收敛、底座分化：Muse=自建 VM，open-muse=Ark MA",
+    "MA 就是托管的 harness：k2-bridge 要不要出一个 MA 后端？",
+    "intersection vs adapter：怕缺功能还是怕维护 adapter",
+    "记忆文件名撞车不是巧合：k2 沿用即对齐生态",
+    "单人 6 天 482 commits：AI 原生开发的产能样本"
+  ]]
+]];
+
+function build(node, depth) {
+  const li = document.createElement("li");
+  const isLeaf = typeof node === "string";
+  li.className = "node " + (isLeaf ? "leaf" : (depth === 0 ? "root" : depth === 1 ? "l1" : ""));
+  const label = document.createElement("span");
+  label.className = "label";
+  const text = isLeaf ? node : node[0];
+  label.innerHTML = '<span class="caret">' + (isLeaf ? "" : "▸") + '</span><span class="text"></span>';
+  label.querySelector(".text").textContent = text;
+  li.appendChild(label);
+  if (!isLeaf) {
+    const ul = document.createElement("ul");
+    if (depth >= 1) ul.classList.add("collapsed");
+    node[1].forEach(child => ul.appendChild(build(child, depth + 1)));
+    li.appendChild(ul);
+    label.addEventListener("click", () => {
+      ul.classList.toggle("collapsed");
+      label.querySelector(".caret").textContent = ul.classList.contains("collapsed") ? "▸" : "▾";
+    });
+  }
+  return li;
+}
+const tree = document.getElementById("tree");
+tree.appendChild(build(data, 0));
+document.getElementById("expandAll").addEventListener("click", () => {
+  tree.querySelectorAll("ul.collapsed").forEach(u => u.classList.remove("collapsed"));
+  tree.querySelectorAll(".caret").forEach(c => c.textContent = "▾");
+});
+document.getElementById("collapseAll").addEventListener("click", () => {
+  tree.querySelectorAll("ul.tree ul").forEach(u => u.classList.add("collapsed"));
+  tree.querySelectorAll("li:not(.root) > .label .caret").forEach(c => c.textContent = "▸");
+});
+</script>
+</body>
+</html>
