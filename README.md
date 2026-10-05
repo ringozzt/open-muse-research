@@ -139,3 +139,7 @@ mindmap
 ```
 
 交互版导图：[mindmap.html](./mindmap.html)
+
+## 延伸构想
+
+- [True Open-Muse 构想](./true-open-muse.md)：用 dsh + oar 补上闭源的 MA runtime，拼全开源、厂商无关的个人 Agent 栈。
