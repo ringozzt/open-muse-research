@@ -43,16 +43,16 @@
 const data = ["open-muse 调研", [
   ["基本盘", [
     "chyroc/open-muse · 已 fork 到 ringozzt/open-muse",
-    "20 star / 2 fork / 0 release · 2026-09-29 创建（6 天）",
-    "单人 482 commits（chyroc 一人，约 80 commits/天）",
+    "20 star / 2 fork / 0 release · 2026-09-29 创建",
+    "单人 482 commits（chyroc 一人）",
     "TypeScript · 765 文件 · 默认分支 master",
     "无 LICENSE 文件——借代码前先确认授权"
   ]],
-  ["一句话", [
+  ["它是什么", [
     "开源个人 AI agent 客户端：iOS / Mac / Web / Android",
     "跑在 Managed Agents（MA）托管服务上",
     "无自建模型代理：拿用户自己的 key 直调 MA API",
-    "和 Muse 是同一个产品形状"
+    "MA = 持久化 agent + 隔离云环境 + session 事件流 + 记忆库"
   ]],
   ["架构三件套", [
     ["客户端 Apps（src/ 193 文件）", [
@@ -63,26 +63,36 @@ const data = ["open-muse 调研", [
     ["Open Muse 服务（server/，CF Workers + D1）", [
       "管账号、密钥（AES-GCM，只读回内存不落盘）",
       "定时 Feed、目标 check-in、提醒投递",
-      "设计边界：只做同步编排，不替 Ark 跑 loop"
+      "设计边界：只做同步编排，不替 MA 跑 loop"
     ]],
     ["Ark MA：真正的 agent loop", [
       "持久化 agent（含版本）、隔离云环境",
-      "带事件流的 session、可挂文件和 Vault",
-      "memory store：tools / MCP / skills 由上游执行"
+      "带事件流的 session，可挂文件和 Vault",
+      "tools / MCP / skills 由上游执行"
     ]]
+  ]],
+  ["服务端架构", [
+    "单文件路由 index.ts（约 700 行，30 来个路由）",
+    "D1 生产 + Postgres 自托管，两套 migration，测试双跑",
+    "package.json 零运行时依赖",
+    "jobs.ts：手写状态机 queued→creating→ready→sending→running，带 lease fencing",
+    "cron 每 5 分钟 tick，一次选 20 个到期租户，fail closed",
+    "军规：不确定的结果先去上游只读核查，绝不盲重试",
+    "密钥 AES-GCM 密封 + revision 围栏；轮换走 bounded batch reseal",
+    "BACKGROUND_ENABLED 默认 false，后台能力默认关闭"
   ]],
   ["ma-provider.ts：60 行后端切换", [
     "MAProviderId = \"ark\" | \"claude\"，构建时二选一",
     "默认 Ark：ark.cn-beijing.volces.com，豆包 doubao-seed-2-1-pro-260915",
     "备选 Claude MA：claude-opus-5-5，WebView 直调 API",
     "关键决策：capability intersection——缺的能力直接砍，不模拟",
-    "对照 oar：oar 写 adapter 补齐（并集），open-muse 取交集",
-    "52 个 MA 操作目录：shared/ma-contract.json + ma.ts"
+    "52 个 MA 操作目录：shared/ma-contract.json + ma.ts",
+    "\"Integrated\" 只表示适配代码存在 ≠ 真实账号验收"
   ]],
-  ["记忆模型：与 Muse 同构", [
+  ["记忆模型", [
     "GOALS.md / SOUL.md / MEMORY.md / IDENTITY.md / FEED.md",
     "首次对话起名（Kit / Milo / Muse）写进 IDENTITY.md",
-    "记忆即文档正在成为个人 agent 的事实标准"
+    "用户可在 App 里打开、编辑、清空"
   ]],
   ["信任模型", [
     "用 Mac / 读健康数据前先审批；日历和定位每次都问",
@@ -90,18 +100,19 @@ const data = ["open-muse 调研", [
     "结果不确定的写操作先核查、不盲重试",
     "密钥只放内存；记忆文档可见、可编辑、可清空"
   ]],
-  ["验证状态", [
-    "2026-09-30 验证记录：452 测试通过（含 89 直连用例）",
-    "区分 mock 回归 vs 真实云测试",
-    "\"Integrated\" 只表示适配代码存在 ≠ 真实账号验收",
-    "Claude 后端未端到端验证；客户端无定时任务/推送/支付"
+  ["开放边界：开的是哪几层", [
+    "客户端：开源；编排服务：开源",
+    "Agent runtime：闭源（Ark MA / Anthropic MA）",
+    "模型：闭源",
+    "结论：开源的是产品壳，干活的 runtime 在云厂商手里",
+    "后门：ma-contract.json 把 52 个操作文档化了，可移植边界",
+    "离全开源只差一个开源的 MA 实现——目前还没有"
   ]],
-  ["给 Te 的 5 条参考", [
-    "产品层收敛、底座分化：Muse=自建 VM，open-muse=Ark MA",
-    "MA 就是托管的 harness：k2-bridge 要不要出一个 MA 后端？",
-    "intersection vs adapter：怕缺功能还是怕维护 adapter",
-    "记忆文件名撞车不是巧合：k2 沿用即对齐生态",
-    "单人 6 天 482 commits：AI 原生开发的产能样本"
+  ["验证状态与风险", [
+    "2026-09-30：452 测试通过（含 89 直连用例），验收重点 iOS",
+    "Android 未真机验证；Claude 后端未端到端验证",
+    "check-in 和提醒的真实 MA 调度尚未演练",
+    "无 LICENSE；单人单点；6 天 482 commits，API 和行为都可能大变"
   ]]
 ]];
 
